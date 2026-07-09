@@ -12,3 +12,6 @@ mock_roles:
   - infra.controller_configuration.inventory_sources
   - infra.controller_configuration.hosts
   - infra.controller_configuration.job_templates
+
+exclude_paths:
+  - .github/

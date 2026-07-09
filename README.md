@@ -22,8 +22,6 @@
 - Admin-level credentials/tokens
 - Non-production environment for first runs (recommended)
 
-Install required collections:
-
 ### Configure Automation Hub access
 
 `infra.aap_configuration` and `infra.aap_configuration_extended` both declare

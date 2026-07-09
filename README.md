@@ -1,52 +1,51 @@
-# AAP-CaC (AAP 2.4/AWX ➜ AAP 2.5/2.6) — Migration Starter Pack
+# AAP-CaC (AAP 2.4/AWX -> AAP 2.5/2.6) - Migration Starter Pack
 
-> **Important support notice!!**  
+> **Important support notice**  
 > This repository is a **community starting point** for moving Automation Controller objects that are exportable via **Config-as-Code (CaC)** from **AAP 2.4 or AWX** into **AAP 2.5+**.  
 > It is **not** an official or supported migration path from Red Hat. Validate everything in non-production first.
 
 > **Credential secrets cannot be migrated**  
-> CaC **does not export secret values**. During import, **credential objects are created without their passwords/tokens/private keys**. You must **re-enter secrets manually** in AAP 2.5 (or seed them via your own secret manager/API) after the import completes.
+> CaC does **not** export secret values. During import, credential objects are created without their passwords/tokens/private keys. You must re-enter secrets manually in AAP 2.5 (or seed them via your secret manager/API) after import.
 
 ## What this repo contains
 
-- **`export_old.yml`** — exports CaC data from **AAP ≤ 2.4 / AWX**. Use this when your source is 2.4 or older.  
-- **`export_new.yml`** — exports CaC data from **AAP 2.5+** (useful for iterative backups or 2.5→2.5 transfers).  
-- **`import_new.yml`** — imports the exported CaC bundle into **AAP 2.5** in dependency-safe order.  
-- **`vars.yml`** — example variables file you customize for your environments.  
-- **`collections/`** — pinned collections for repeatable runs (install with `ansible-galaxy`).  
-
----
+- `export_old.yml` - exports CaC data from **AAP <= 2.4 / AWX**
+- `export_new.yml` - exports CaC data from **AAP 2.5+**
+- `import_new.yml` - imports exported CaC bundle into **AAP 2.5+** in dependency-safe order
+- `vars.yml` - base variables file to customize
+- `collections/` - pinned collections for repeatable runs
 
 ## Prerequisites
 
-- **Ansible** on your runner host.  
-- Network/API access to **source controller** (AAP 2.4/AWX) and **destination controller** (AAP 2.5).  
-- **Personal Access Tokens** (PATs) with admin-level permissions for both.  
-- (Recommended) a non-prod target for dry runs.
+- Ansible on your runner host
+- API/network access to source and destination controllers
+- Admin-level credentials/tokens
+- Non-production environment for first runs (recommended)
 
-Install required collections (from the included lock/requirements under `collections/` if present):
+Install required collections:
 
 ```bash
-ansible-galaxy install -r collections/requirements.yml
+ansible-galaxy collection install -r collections/requirements.yml
 ```
 
----
+## Configure variables
 
-## Configure `vars.yml`
+Use a layered vars approach:
 
-Create or edit `vars.yml` in the repo root. The exact variable names in your playbooks may vary slightly; here’s a **working template**:
+- vars.yml for non-sensitive defaults
+- vars.vault.yml (encrypted) for secrets
 
-```yaml
-# AAP 2.4 or AWX
-controller_username: "admin" # MUST BE ADMIN USER
-controller_password: "<your password here>"
-controller_hostname: "controller.example.com" # DO NOT INCLUDE http:// or https://
+1) Create/edit vars.yml (non-secret values)
+
+```
+# Source (AAP <= 2.4 / AWX)
+controller_username: "admin"
+controller_hostname: "controller.example.com" # no http(s) prefix
 controller_api_plugin: awx.awx.controller_api
 
-## 2.5/2.6
-aap_username: "admin" # MUST BE ADMIN USER
-aap_password: "<your password here>"
-aap_hostname: "aap.example.com" # DO NOT INCLUDE http:// or https://
+# Target (AAP 2.5+)
+aap_username: "admin"
+aap_hostname: "aap.example.com" # no http(s) prefix
 
 # General
 export_organization: "{{ default(None) }}"
@@ -55,62 +54,76 @@ flatten_output: true
 aap_validate_certs: "false"
 controller_validate_certs: "false"
 
-# DEBUG
+# Logging/debug
+
 controller_configuration_credentials_secure_logging: "false"
 cas_secure_logging: "false"
 ```
 
-> Keep tokens out of Git. Prefer environment variables + `ansible-vault` or your secret manager.
+2) Create encrypted vars.vault.yml (secret values)
 
----
 
-## Run order (copy/paste)
+`ansible-vault create vars.vault.yml`
 
-### A) Export from AAP 2.4 / AWX
-```bash
-ansible-playbook export_old.yml -e @vars.yml -e export_organization=<Org Name>
+Example Contents:
+
+```
+controller_password: "<source-admin-password>"
+aap_password: "<target-admin-password>"
+
+# Optional token-based auth if your playbooks support it
+controller_oauthtoken: "<optional-source-token>"
+aap_oauthtoken: "<optional-target-token>"
 ```
 
-### B) Export from AAP 2.5+
-```bash
-ansible-playbook export_new.yml -e @vars.yml
+3) Run playbooks with both var files
+
 ```
+# Export from <=2.4 / AWX
+ansible-playbook export_old.yml -e @vars.yml -e @vars.vault.yml --ask-vault-pass -e export_organization="<Org Name>"
 
-### C) Import into AAP 2.5+
-```bash
-ansible-playbook import_new.yml -e @vars.yml
+# Export from 2.5+
+ansible-playbook export_new.yml -e @vars.yml -e @vars.vault.yml --ask-vault-pass
+
+# Import into 2.5+
+ansible-playbook import_new.yml -e @vars.yml -e @vars.vault.yml --ask-vault-pass
 ```
-
-> **After the import:** re-enter all credential secrets in AAP 2.5.
-
----
 
 ## Typical object coverage
 
 - Organizations, teams, users
-- Credential types, **credentials (metadata only)**  
-- Projects, inventories/groups/hosts, inventory sources  
-- Execution environments, notification templates  
+- Credential types, credentials (metadata only)
+- Projects, inventories/groups/hosts, inventory sources
+- Execution environments, notification templates
 - Job templates, workflow job templates, schedules, RBAC mappings
 
----
+### Post-import required actions
 
-## Tips & troubleshooting
+- Re-enter credential secrets
+- Re-validate SCM credential links and project sync behavior
+- Run test jobs/workflows to confirm parity
 
-- **401/403**: validate tokens and `*_validate_certs`.  
-- **Project sync fails**: re-enter SCM credentials.  
-- **Credential test fails**: re-enter secrets.  
-- **Re-runs**: imports are idempotent.
+## Troubleshooting
 
----
+- 401/403: verify credentials/tokens and *_validate_certs
+- Project sync failures: rebind SCM credentials/secrets
+- Credential test failures: re-enter credential secret fields
+- Idempotency/re-runs: repeated imports should converge, but validate object-by-object
+
+### Known module compatibility issue
+
+If import fails with:
+- couldn't resolve module/action 'ansible.controller.application'
+
+then your runtime likely lacks that module while the dispatch flow is attempting application roles. Workarounds:
+
+- exclude application roles in dispatcher config, or
+- gate application import behind an opt-in variable/tag
 
 ## FAQ
 
-**Is this an official Red Hat migration?**  
+**Is this an official Red Hat migration path?**
 No.
 
-**Why aren’t passwords exported?**  
-Secret values are encrypted at rest and not emitted by CaC.
-
----
-
+**Why are passwords/tokens not exported in CaC?**
+Secret values are protected at rest and intentionally not emitted in exports.

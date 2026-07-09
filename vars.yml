@@ -1,21 +1,46 @@
-# AAP 2.4 or AWX
-controller_username: "admin" # MUST BE ADMIN USER
-controller_password: "<your password here>"
-controller_hostname: "controller.example.com" # DO NOT INCLUDE http:// or https://
-controller_api_plugin: awx.awx.controller_api
+---
+# Connection/authentication (from environment)
+aap_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+aap_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
+aap_hostname: "{{ lookup('env', 'CONTROLLER_HOST') }}"
+aap_validate_certs: "{{ lookup('env', 'CONTROLLER_VERIFY_SSL') | default('false', true) }}"
+aap_oauthtoken: "{{ lookup('env', 'CONTROLLER_OAUTH_TOKEN') }}"
 
-## 2.5/2.6
-aap_username: "admin" # MUST BE ADMIN USER
-aap_password: "<your password here>"
-aap_hostname: "aap.example.com" # DO NOT INCLUDE http:// or https://
+# Legacy controller_* aliases are kept in sync because some collection code
+# paths still expect those names.
+controller_host: "{{ aap_hostname }}"
+controller_username: "{{ aap_username }}"
+controller_password: "{{ aap_password }}"
+controller_validate_certs: "{{ aap_validate_certs }}"
+controller_oauthtoken: "{{ aap_oauthtoken }}"
 
-# General
-export_organization: "{{ default(None) }}"
+# Export/import scope
+export_organization: Default
+organization_filter: "{{ export_organization }}"
+organization: "{{ export_organization }}"
 output_path: "./exports/{{ export_organization }}"
 flatten_output: true
-aap_validate_certs: "false"
-controller_validate_certs: "false"
 
-# DEBUG
-controller_configuration_credentials_secure_logging: "false"
-cas_secure_logging: "false"
+# Keep output deterministic and avoid endpoints known to 404 by default.
+input_tag:
+  - controller_credentials
+  - controller_credential_types
+  - controller_execution_environments
+  - controller_groups
+  - controller_hosts
+  - controller_instance_groups
+  - controller_inventories
+  - controller_inventory_sources
+  - controller_job_templates
+  - controller_notification_templates
+  - controller_organizations
+  - controller_projects
+  - controller_roles
+  - controller_schedules
+  - controller_settings
+  - controller_teams
+  - controller_users
+  - controller_workflow_job_templates
+
+controller_configuration_filetree_create_secure_logging: "false"
+...

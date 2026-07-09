@@ -1,2 +1,14 @@
 ---
 offline: true
+
+mock_roles:
+  - infra.aap_configuration_extended.filetree_create
+  - infra.controller_configuration.filetree_create
+  - infra.controller_configuration.credential_types
+  - infra.controller_configuration.credentials
+  - infra.controller_configuration.projects
+  - infra.controller_configuration.execution_environments
+  - infra.controller_configuration.inventories
+  - infra.controller_configuration.inventory_sources
+  - infra.controller_configuration.hosts
+  - infra.controller_configuration.job_templates

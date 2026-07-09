@@ -24,8 +24,53 @@
 
 Install required collections:
 
+### Configure Automation Hub access
+
+`infra.aap_configuration` and `infra.aap_configuration_extended` both declare
+hard dependencies on certified Red Hat collections (`ansible.controller`,
+`ansible.hub`, `ansible.platform`) that are **only published on Automation
+Hub**, not on the public Ansible Galaxy. `ansible.cfg` in this repository
+configures Automation Hub as a named `galaxy` server (`automation_hub`), but
+you must still:
+
+1. Edit the `url` in the `[galaxy_server.automation_hub]` section of
+   `ansible.cfg` to point at your Automation Hub instance (on-prem/Private
+   Automation Hub or Red Hat Cloud/Hosted Hub).
+2. Export your token before installing collections:
+
+   ```bash
+   export ANSIBLE_GALAXY_SERVER_AUTOMATION_HUB_TOKEN="<your-token>"
+   ```
+
+   Ansible only picks this env var up because `automation_hub` is declared as
+   a named server in `ansible.cfg`'s `server_list` — the env var alone, with
+   no matching server definition, is silently ignored and collection installs
+   will fall back to the public Galaxy, which does **not** have
+   `ansible.controller` (this is the cause of `NOTINSTALLED` /
+   `Check ... ansible.controller is installed` failures at playbook runtime).
+3. If you're using the Red Hat Cloud/Hosted Hub (console.redhat.com), also
+   uncomment `auth_url` in `ansible.cfg` so the offline token can be exchanged
+   for an access token via SSO.
+
+### Install required collections
+
+Install collections from `collections/requirements.yml`:
+
 ```bash
 ansible-galaxy collection install -r collections/requirements.yml
+```
+
+`collections/requirements.yml` includes:
+
+- `infra.aap_configuration`
+- `infra.aap_configuration_extended`
+- `ansible.controller`, `ansible.hub`, `ansible.platform` (certified
+  dependencies, sourced from `automation_hub`)
+
+Verify `ansible.controller` actually installed before running playbooks:
+
+```bash
+ansible-galaxy collection list ansible.controller
 ```
 
 ## Configure variables

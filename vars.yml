@@ -15,8 +15,9 @@ controller_validate_certs: "{{ aap_validate_certs }}"
 controller_oauthtoken: "{{ aap_oauthtoken }}"
 
 # Export/import scope
-export_organization: Default
+export_organization: ""
 organization_filter: "{{ export_organization }}"
+output_path: "./exports/{{ export_organization | default('') }}"
 organization: "{{ export_organization }}"
 output_path: "./exports/{{ export_organization }}"
 flatten_output: true

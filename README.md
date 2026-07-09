@@ -36,10 +36,19 @@ you must still:
 1. Edit the `url` in the `[galaxy_server.automation_hub]` section of
    `ansible.cfg` to point at your Automation Hub instance (on-prem/Private
    Automation Hub or Red Hat Cloud/Hosted Hub).
-2. Export your token before installing collections:
+2. Inject your Automation Hub token from HashiCorp Vault before installing
+   collections (do not commit the token to git or hardcode it in
+   `ansible.cfg`):
 
    ```bash
-   export ANSIBLE_GALAXY_SERVER_AUTOMATION_HUB_TOKEN="<your-token>"
+   # One-time: store the token in Vault (KV v2 example path)
+   vault kv put secret/aap-cac-migration \
+     automation_hub_token="<your-token>"
+
+   # At install time: export into the current shell, then unset when done
+   export ANSIBLE_GALAXY_SERVER_AUTOMATION_HUB_TOKEN="$(
+     vault kv get -field=automation_hub_token secret/aap-cac-migration
+   )"
    ```
 
    Ansible only picks this env var up because `automation_hub` is declared as
@@ -48,6 +57,17 @@ you must still:
    will fall back to the public Galaxy, which does **not** have
    `ansible.controller` (this is the cause of `NOTINSTALLED` /
    `Check ... ansible.controller is installed` failures at playbook runtime).
+
+   After `ansible-galaxy collection install` succeeds, clear the token from
+   the shell:
+
+   ```bash
+   unset ANSIBLE_GALAXY_SERVER_AUTOMATION_HUB_TOKEN
+   ```
+
+   In CI, prefer authenticating the job to Vault (AppRole, JWT, etc.) and
+   injecting `ANSIBLE_GALAXY_SERVER_AUTOMATION_HUB_TOKEN` as a job secret
+   instead of writing it to disk.
 3. If you're using the Red Hat Cloud/Hosted Hub (console.redhat.com), also
    uncomment `auth_url` in `ansible.cfg` so the offline token can be exchanged
    for an access token via SSO.

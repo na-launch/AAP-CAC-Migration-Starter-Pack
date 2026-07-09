@@ -35,7 +35,7 @@
             aap_oauthtoken: "{{ authtoken_res.json.token }}"
             controller_oauthtoken: "{{ authtoken_res.json.token }}"
             aap_oauthtoken_url: "{{ authtoken_res.json.url }}"
-      
+
     - name: Load all variable files from {{ output_path }}
       ansible.builtin.include_vars:
         dir: "{{ output_path }}"
@@ -51,4 +51,3 @@
     - {role: infra.controller_configuration.inventory_sources, when: controller_inventory_sources is defined}
     - {role: infra.controller_configuration.hosts, when: controller_hosts is defined}
     - {role: infra.controller_configuration.job_templates, when: controller_templates is defined}
-

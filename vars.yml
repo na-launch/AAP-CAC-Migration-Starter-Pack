@@ -19,7 +19,6 @@ export_organization: ""
 organization_filter: "{{ export_organization }}"
 output_path: "./exports/{{ export_organization | default('') }}"
 organization: "{{ export_organization }}"
-output_path: "./exports/{{ export_organization }}"
 flatten_output: true
 
 # Keep output deterministic and avoid endpoints known to 404 by default.

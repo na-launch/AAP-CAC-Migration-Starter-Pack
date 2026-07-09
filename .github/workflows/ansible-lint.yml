@@ -1,0 +1,16 @@
+name: Ansible Lint
+on:
+  pull_request:
+    branches: ["main", "master"]
+
+jobs:
+  lint:
+    name: Ansible Lint Check # ⚠️ Note this name: this is what the ruleset will look for.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ansible-lint
+        uses: ansible/ansible-lint@main
+        # Optional: uncomment to specify a requirements file for dependencies
+        # with:
+        #   requirements_file: roles/requirements.yml
